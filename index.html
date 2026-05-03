@@ -2,158 +2,762 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>QA Test Case Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Forge — AI Test Case Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #1a1a24;
+      --border: #2a2a3a;
+      --accent: #00e5a0;
+      --accent2: #7c5cfc;
+      --text: #f0f0f8;
+      --muted: #6b6b8a;
+      --danger: #ff4d6d;
     }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated grid background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glow orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.15;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: var(--accent2);
+      top: -200px; left: -100px;
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+    .orb-2 {
+      width: 400px; height: 400px;
+      background: var(--accent);
+      bottom: -150px; right: -100px;
+      animation: drift 15s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes drift {
+      from { transform: translate(0, 0); }
+      to { transform: translate(40px, 30px); }
+    }
+
+    /* Layout */
+    .layout {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 28px 20px;
       display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
       justify-content: center;
-      padding: 40px 20px;
+      font-size: 18px;
+    }
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+    }
+    .logo-text span {
+      color: var(--accent);
     }
 
-    .container {
-      background: white;
-      border-radius: 12px;
-      padding: 40px;
+    .sidebar-section h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .template-btn {
+      display: block;
       width: 100%;
-      max-width: 800px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 10px 14px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 4px;
+    }
+    .template-btn:hover {
+      background: var(--surface2);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .template-btn.active {
+      background: rgba(0,229,160,0.08);
+      border-color: rgba(0,229,160,0.3);
+      color: var(--accent);
     }
 
-    h1 {
-      font-size: 24px;
-      margin-bottom: 8px;
-      color: #1a1a1a;
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background: rgba(124,92,252,0.15);
+      border: 1px solid rgba(124,92,252,0.3);
+      border-radius: 4px;
+      font-size: 10px;
+      color: var(--accent2);
+      margin-left: auto;
     }
 
-    p.subtitle {
-      color: #666;
-      margin-bottom: 24px;
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 14px;
+      background: rgba(0,229,160,0.05);
+      border: 1px solid rgba(0,229,160,0.15);
+      border-radius: 10px;
+    }
+    .sidebar-footer p {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .sidebar-footer strong {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* Main content */
+    .main {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(10,10,15,0.8);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-title {
+      font-family: 'Syne', sans-serif;
       font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .header-title span { color: var(--text); }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* Content area */
+    .content {
+      flex: 1;
+      padding: 40px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 24px;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Input section */
+    .input-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .input-section:focus-within {
+      border-color: rgba(0,229,160,0.4);
+      box-shadow: 0 0 0 3px rgba(0,229,160,0.05);
+    }
+
+    .input-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .input-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .char-count {
+      font-size: 11px;
+      color: var(--muted);
     }
 
     textarea {
       width: 100%;
-      height: 120px;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 15px;
-      resize: vertical;
-      outline: none;
-    }
-
-    textarea:focus {
-      border-color: #4f46e5;
-    }
-
-    button {
-      margin-top: 16px;
-      width: 100%;
-      padding: 14px;
-      background-color: #4f46e5;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #4338ca;
-    }
-
-    button:disabled {
-      background-color: #a5b4fc;
-      cursor: not-allowed;
-    }
-
-    #output {
-      margin-top: 32px;
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
       padding: 20px;
-      white-space: pre-wrap;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
       font-size: 14px;
       line-height: 1.7;
-      color: #1a1a1a;
-      display: none;
+      resize: none;
+      height: 140px;
+    }
+    textarea::placeholder { color: var(--muted); }
+
+    .input-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
     }
 
-    .loader {
+    .model-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .model-tag span {
+      padding: 3px 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--accent2);
+    }
+
+    .generate-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+    .generate-btn:hover {
+      background: #00ffb3;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0,229,160,0.3);
+    }
+    .generate-btn:disabled {
+      background: var(--surface2);
+      color: var(--muted);
+      transform: none;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .generate-btn svg {
+      width: 14px; height: 14px;
+    }
+
+    /* Output section */
+    .output-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
       text-align: center;
-      margin-top: 20px;
-      color: #4f46e5;
+      gap: 16px;
+    }
+    .empty-icon {
+      width: 64px; height: 64px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .empty-state h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .empty-state p {
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 340px;
+      line-height: 1.7;
+    }
+
+    /* Loading state */
+    .loader {
       display: none;
+      flex-direction: column;
+      gap: 12px;
+      padding: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+    .loader.visible { display: flex; }
+    .loader-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--accent);
+    }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(0,229,160,0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .skeleton {
+      height: 12px;
+      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      border-radius: 4px;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+
+    /* Result */
+    .result-card {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      animation: fadeUp 0.4s ease;
+    }
+    .result-card.visible { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0,229,160,0.03);
+    }
+    .result-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Syne', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .result-label::before {
+      content: '';
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 8px;
+    }
+    .action-btn {
+      padding: 6px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .action-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .result-body {
+      padding: 24px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #c8c8e0;
+      white-space: pre-wrap;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+    .result-body::-webkit-scrollbar { width: 4px; }
+    .result-body::-webkit-scrollbar-track { background: transparent; }
+    .result-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Quick examples */
+    .quick-examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .example-chip {
+      padding: 6px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .example-chip:hover {
+      border-color: rgba(124,92,252,0.5);
+      color: var(--accent2);
+      background: rgba(124,92,252,0.08);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .content { padding: 20px; }
+      header { padding: 16px 20px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🧪 QA Test Case Generator</h1>
-    <p class="subtitle">Describe any feature — get structured test cases instantly.</p>
 
-    <textarea 
-      id="featureInput" 
-      placeholder="e.g. Login page with email and password fields...">
-    </textarea>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
 
-    <button id="generateBtn">
-    Generate Test Cases
-    </button>
+<div class="layout">
 
-    <div class="loader" id="loader">⏳ Generating test cases...</div>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">⚗️</div>
+      <div class="logo-text">QA<span>Forge</span></div>
+    </div>
 
-    <div id="output"></div>
+    <div class="sidebar-section">
+      <h3>Test Type</h3>
+      <button class="template-btn active" onclick="setType(this, '')">
+        🧪 Full Test Suite
+      </button>
+      <button class="template-btn" onclick="setType(this, 'Focus on API endpoint testing only.')">
+        🔌 API Testing
+      </button>
+      <button class="template-btn" onclick="setType(this, 'Focus on UI and UX testing only.')">
+        🖥️ UI / UX Testing
+      </button>
+      <button class="template-btn" onclick="setType(this, 'Focus on security vulnerabilities and penetration testing.')">
+        🔐 Security Testing
+      </button>
+      <button class="template-btn" onclick="setType(this, 'Focus on performance and load testing.')">
+        ⚡ Performance Testing
+      </button>
+      <button class="template-btn" onclick="setType(this, 'Focus on mobile responsiveness and cross-device testing.')">
+        📱 Mobile Testing
+      </button>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Quick Templates</h3>
+      <button class="template-btn" onclick="fillTemplate('Login page with email and password, forgot password, and social login options')">Login Page</button>
+      <button class="template-btn" onclick="fillTemplate('Payment checkout with credit card, UPI, and net banking options')">Checkout Flow</button>
+      <button class="template-btn" onclick="fillTemplate('User registration form with email verification and OTP')">Registration</button>
+      <button class="template-btn" onclick="fillTemplate('Search functionality with filters, sorting, and pagination')">Search & Filter</button>
+    </div>
+
+    <div class="sidebar-footer">
+      <p>Built by a <strong>7-year QA engineer</strong> turning into an AI builder. Powered by Groq + Llama 3.</p>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header>
+      <div class="header-title">
+        <span>Test Case Generator</span> — AI Powered
+      </div>
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        Groq · llama-3.1-8b-instant
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Input -->
+      <div>
+        <div class="input-section">
+          <div class="input-header">
+            <span class="input-label">Feature Description</span>
+            <span class="char-count" id="charCount">0 / 500</span>
+          </div>
+          <textarea
+            id="featureInput"
+            placeholder="Describe a feature to generate test cases for...&#10;&#10;e.g. Login page with email and password fields, remember me checkbox, and forgot password link."
+            maxlength="500"
+            oninput="updateCount(this)"
+          ></textarea>
+          <div class="input-footer">
+            <div class="model-tag">
+              Model <span>llama-3.1-8b</span>
+            </div>
+            <button class="generate-btn" id="generateBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+              Generate Test Cases
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick examples -->
+        <div style="margin-top: 12px;">
+          <div class="quick-examples">
+            <span class="example-chip" onclick="fillTemplate('Login page with email and password')">Login page</span>
+            <span class="example-chip" onclick="fillTemplate('Forgot password with email verification')">Forgot password</span>
+            <span class="example-chip" onclick="fillTemplate('Add to cart and checkout flow')">Cart & Checkout</span>
+            <span class="example-chip" onclick="fillTemplate('File upload with size and format validation')">File upload</span>
+            <span class="example-chip" onclick="fillTemplate('User profile edit with avatar upload')">Profile edit</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="output-section">
+
+        <!-- Empty state -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">🧬</div>
+          <h2>Ready to Generate</h2>
+          <p>Describe any feature above and QAForge will generate structured test cases like a senior QA engineer.</p>
+        </div>
+
+        <!-- Loader -->
+        <div class="loader" id="loader">
+          <div class="loader-header">
+            <div class="spinner"></div>
+            Analysing feature and generating test cases...
+          </div>
+          <div class="skeleton" style="width: 80%"></div>
+          <div class="skeleton" style="width: 60%"></div>
+          <div class="skeleton" style="width: 75%"></div>
+          <div class="skeleton" style="width: 50%"></div>
+        </div>
+
+        <!-- Result -->
+        <div class="result-card" id="resultCard">
+          <div class="result-header">
+            <div class="result-label">Generated Test Cases</div>
+            <div class="action-btns">
+              <button class="action-btn" onclick="copyResult()">Copy</button>
+              <button class="action-btn" onclick="downloadResult()">Download</button>
+            </div>
+          </div>
+          <div class="result-body" id="output"></div>
+        </div>
+
+      </div>
+    </div>
   </div>
+</div>
 
-  <script>
+<script>
+  let currentTypeModifier = '';
+  let lastResult = '';
+
+  function updateCount(el) {
+    document.getElementById('charCount').textContent = `${el.value.length} / 500`;
+  }
+
+  function setType(btn, modifier) {
+    document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTypeModifier = modifier;
+  }
+
+  function fillTemplate(text) {
+    const ta = document.getElementById('featureInput');
+    ta.value = text;
+    updateCount(ta);
+    ta.focus();
+  }
+
   async function generateTestCases() {
-    const input = document.getElementById("featureInput").value.trim();
-    const output = document.getElementById("output");
-    const loader = document.getElementById("loader");
-    const btn = document.getElementById("generateBtn");
-
+    const input = document.getElementById('featureInput').value.trim();
     if (!input) {
-      alert("Please describe a feature first.");
+      document.getElementById('featureInput').focus();
       return;
     }
 
-    // Show loader, disable button
-    loader.style.display = "block";
-    output.style.display = "none";
+    const loader = document.getElementById('loader');
+    const resultCard = document.getElementById('resultCard');
+    const emptyState = document.getElementById('emptyState');
+    const btn = document.getElementById('generateBtn');
+    const output = document.getElementById('output');
+
+    // UI state — loading
+    emptyState.style.display = 'none';
+    resultCard.classList.remove('visible');
+    loader.classList.add('visible');
     btn.disabled = true;
-    btn.textContent = "Generating...";
+    btn.textContent = 'Generating...';
 
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input })
-    });
+    const fullPrompt = currentTypeModifier
+      ? `${input}\n\n${currentTypeModifier}`
+      : input;
 
-    const data = await response.json();
-    const result = data.result;
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: fullPrompt })
+      });
 
-    // Show result
-    loader.style.display = "none";
-    output.style.display = "block";
-    output.textContent = result;
+      const data = await response.json();
+      lastResult = data.result;
 
-    // Reset button
+      output.textContent = lastResult;
+      loader.classList.remove('visible');
+      resultCard.classList.add('visible');
+      document.getElementById('featureInput').value = '';
+      updateCount(document.getElementById('featureInput'));
+
+    } catch (err) {
+      loader.classList.remove('visible');
+      emptyState.style.display = 'flex';
+      alert('Something went wrong. Please try again.');
+    }
+
     btn.disabled = false;
-    btn.textContent = "Generate Test Cases";
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Generate Test Cases`;
   }
 
-  // 👇 This must be OUTSIDE the function
-  document.getElementById("generateBtn").addEventListener("click", generateTestCases);
+  function copyResult() {
+    navigator.clipboard.writeText(lastResult);
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  }
+
+  function downloadResult() {
+    const blob = new Blob([lastResult], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `testcases_${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('generateBtn').addEventListener('click', generateTestCases);
+
+  document.getElementById('featureInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.metaKey) generateTestCases();
+  });
 </script>
+
 </body>
 </html>
