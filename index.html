@@ -106,8 +106,8 @@
       placeholder="e.g. Login page with email and password fields...">
     </textarea>
 
-    <button id="generateBtn" onclick="generateTestCases()">
-      Generate Test Cases
+    <button id="generateBtn">
+    Generate Test Cases
     </button>
 
     <div class="loader" id="loader">⏳ Generating test cases...</div>
@@ -116,45 +116,44 @@
   </div>
 
   <script>
+  async function generateTestCases() {
+    const input = document.getElementById("featureInput").value.trim();
+    const output = document.getElementById("output");
+    const loader = document.getElementById("loader");
+    const btn = document.getElementById("generateBtn");
 
-    async function generateTestCases() {
-      const input = document.getElementById("featureInput").value.trim();
-      const output = document.getElementById("output");
-      const loader = document.getElementById("loader");
-      const btn = document.getElementById("generateBtn");
-
-      if (!input) {
-        alert("Please describe a feature first.");
-        return;
-      }
-
-      // Show loader, disable button
-      loader.style.display = "block";
-      output.style.display = "none";
-      btn.disabled = true;
-      btn.textContent = "Generating...";
-
-      const response = await fetch("/api/generate", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message: input })
-});
-
-const data = await response.json();
-const result = data.result;
-
-const data = await response.json();
-const result = data.result;
-
-      // Show result
-      loader.style.display = "none";
-      output.style.display = "block";
-      output.textContent = result;
-
-      // Reset button
-      btn.disabled = false;
-      btn.textContent = "Generate Test Cases";
+    if (!input) {
+      alert("Please describe a feature first.");
+      return;
     }
-  </script>
+
+    // Show loader, disable button
+    loader.style.display = "block";
+    output.style.display = "none";
+    btn.disabled = true;
+    btn.textContent = "Generating...";
+
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: input })
+    });
+
+    const data = await response.json();
+    const result = data.result;
+
+    // Show result
+    loader.style.display = "none";
+    output.style.display = "block";
+    output.textContent = result;
+
+    // Reset button
+    btn.disabled = false;
+    btn.textContent = "Generate Test Cases";
+  }
+
+  // 👇 This must be OUTSIDE the function
+  document.getElementById("generateBtn").addEventListener("click", generateTestCases);
+</script>
 </body>
 </html>
